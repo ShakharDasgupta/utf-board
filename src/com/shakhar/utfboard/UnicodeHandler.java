@@ -17,6 +17,7 @@
 package com.shakhar.utfboard;
 
 import java.util.HashMap;
+import org.xml.sax.Attributes;
 import org.xml.sax.helpers.DefaultHandler;
 
 /**
@@ -25,12 +26,13 @@ import org.xml.sax.helpers.DefaultHandler;
  */
 public class UnicodeHandler extends DefaultHandler {
 
-    private HashMap<String, Range> map;
+    private HashMap<String, UnicodeBlock> map;
 
     private StringBuffer accumulator;
     private String blockName;
-    private int rangeStart;
-    private int rangeEnd;
+    private int blockMin;
+    private int blockMax;
+    private UnicodeBlock block;
 
     @Override
     public void startDocument() {
@@ -42,24 +44,33 @@ public class UnicodeHandler extends DefaultHandler {
     public void characters(char[] ch, int start, int length) {
         accumulator.append(ch, start, length);
     }
-
+    
+    @Override
+    public void startElement(String uri, String localName, String qName, Attributes attributes) {
+        if (qName.equalsIgnoreCase("codepoints")) {
+            block = new UnicodeBlock(blockName, blockMin, blockMax);
+        }
+    }
     @Override
     public void endElement(String uri, String localName, String qName) {
         if (qName.equalsIgnoreCase("name")) {
             blockName = accumulator.toString();
             accumulator.setLength(0);
-        } else if (qName.equalsIgnoreCase("start")) {
-            rangeStart = Integer.parseInt(accumulator.toString(), 16);
+        } else if (qName.equalsIgnoreCase("min")) {
+            blockMin = Integer.parseInt(accumulator.toString(), 16);
             accumulator.setLength(0);
-        } else if (qName.equalsIgnoreCase("end")) {
-            rangeEnd = Integer.parseInt(accumulator.toString(), 16);
+        } else if (qName.equalsIgnoreCase("max")) {
+            blockMax = Integer.parseInt(accumulator.toString(), 16);
+            accumulator.setLength(0);
+        } else if(qName.equalsIgnoreCase("cp")) {
+            block.addCodePoint(Integer.parseInt(accumulator.toString(), 16));
             accumulator.setLength(0);
         } else if (qName.equalsIgnoreCase("block")) {
-            map.put(blockName, new Range(rangeStart, rangeEnd));
+            map.put(blockName, block);
         }
     }
 
-    public HashMap<String, Range> getMap() {
+    public HashMap<String, UnicodeBlock> getMap() {
         return map;
     }
 

@@ -16,26 +16,43 @@
  */
 package com.shakhar.utfboard;
 
+import java.util.ArrayList;
+
 /**
  *
  * @author Shakhar Dasgupta <shakhardasgupta@gmail.com>
  */
-public class Range {
-
-    private final int start;
-    private final int end;
-
-    public Range(int start, int end) {
-        this.start = start;
-        this.end = end;
+public class UnicodeBlock {
+    
+    private final String name;
+    private final int min;
+    private final int max;
+    private final ArrayList<Integer> codePoints;
+    
+    UnicodeBlock(String name, int min, int max) {
+        this.name = name;
+        this.min = min;
+        this.max = max;
+        this.codePoints = new ArrayList<>();
     }
-
-    public int getStart() {
-        return start;
+    
+    public String getName() {
+        return name;
     }
-
-    public int getEnd() {
-        return end;
+    
+    public int getMinimum() {
+        return min;
     }
-
+    
+    public int getMaximum() {
+        return max;
+    }
+    
+    public void addCodePoint(int codePoint) {
+        codePoints.add(codePoint);
+    }
+    
+    public ArrayList<Integer> getCodePoints() {
+        return codePoints;
+    }
 }

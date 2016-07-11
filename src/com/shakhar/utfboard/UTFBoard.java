@@ -16,14 +16,9 @@
  */
 package com.shakhar.utfboard;
 
-import java.io.IOException;
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.HashMap;
-import java.util.logging.Level;
-import java.util.logging.Logger;
 import javafx.application.Application;
 import javafx.event.ActionEvent;
+import javafx.event.EventHandler;
 import javafx.geometry.Insets;
 import javafx.geometry.Orientation;
 import javafx.geometry.Pos;
@@ -35,11 +30,6 @@ import javafx.scene.control.TextArea;
 import javafx.scene.layout.FlowPane;
 import javafx.scene.layout.GridPane;
 import javafx.stage.Stage;
-import javax.xml.parsers.ParserConfigurationException;
-import javax.xml.parsers.SAXParserFactory;
-import org.xml.sax.InputSource;
-import org.xml.sax.SAXException;
-import org.xml.sax.XMLReader;
 
 /**
  *
@@ -51,35 +41,26 @@ public class UTFBoard extends Application {
     private Label rangeLabel;
     private TextArea textArea;
     private FlowPane keyboard;
-    private HashMap<String, Range> map;
+    private UnicodeBlockFactory unicodeBlockFactory;
 
     @Override
     public void start(Stage primaryStage) {
+        unicodeBlockFactory = UnicodeBlockFactory.newInstance();
+
         GridPane grid = new GridPane();
         grid.setAlignment(Pos.CENTER);
         grid.setHgap(10);
         grid.setVgap(10);
         grid.setPadding(new Insets(25, 25, 25, 25));
 
-        try {
-            XMLReader reader = SAXParserFactory.newInstance().newSAXParser().getXMLReader();
-            UnicodeHandler handler = new UnicodeHandler();
-            reader.setContentHandler(handler);
-            reader.parse(new InputSource(getClass().getResourceAsStream("/res/unicode.xml")));
-            map = handler.getMap();
-        } catch (ParserConfigurationException | SAXException | IOException ex) {
-            Logger.getLogger(UTFBoard.class.getName()).log(Level.SEVERE, null, ex);
-        }
-
         blockComboBox = new ComboBox<>();
-        if (map != null) {
-            ArrayList list = new ArrayList(map.keySet());
-            Collections.sort(list);
-            blockComboBox.getItems().addAll(list);
-        }
-        blockComboBox.setOnAction((ActionEvent e) -> {
-            setKeyboard();
-            primaryStage.sizeToScene();
+        blockComboBox.getItems().addAll(unicodeBlockFactory.getBlockNames());
+        blockComboBox.setOnAction(new EventHandler<ActionEvent>() {
+            @Override
+            public void handle(ActionEvent e) {
+                setKeyboard();
+                primaryStage.sizeToScene();
+            }
         });
 
         grid.add(new Label("Unicode Block: "), 0, 0);
@@ -106,19 +87,21 @@ public class UTFBoard extends Application {
 
     public void setKeyboard() {
         keyboard.getChildren().clear();
-        String block = blockComboBox.getSelectionModel().getSelectedItem();
-        int start = map.get(block).getStart();
-        int end = map.get(block).getEnd();
-        rangeLabel.setText("Range: " + Integer.toString(start, 16).toUpperCase() + " - " + Integer.toString(end, 16).toUpperCase());
-        for (int i = start; i <= end; i++) {
-            if (Character.isDefined(i)) {
-                String character = String.valueOf(Character.toChars(i));
-                Button button = new Button(character);
-                button.setOnAction((ActionEvent e) -> {
+        String blockName = blockComboBox.getSelectionModel().getSelectedItem();
+        UnicodeBlock block = unicodeBlockFactory.getBlockByName(blockName);
+        int min = block.getMinimum();
+        int max = block.getMaximum();
+        rangeLabel.setText("Range: " + Integer.toString(min, 16).toUpperCase() + " - " + Integer.toString(max, 16).toUpperCase());
+        for (Integer codePoint : block.getCodePoints()) {
+            String character = String.valueOf(Character.toChars(codePoint));
+            Button button = new Button(character);
+            button.setOnAction(new EventHandler<ActionEvent>() {
+                @Override
+                public void handle(ActionEvent e) {
                     textArea.appendText(character);
-                });
-                keyboard.getChildren().add(button);
-            }
+                }
+            });
+            keyboard.getChildren().add(button);
         }
     }
 
