@@ -27,6 +27,7 @@ import javafx.scene.control.Button;
 import javafx.scene.control.ComboBox;
 import javafx.scene.control.Label;
 import javafx.scene.control.TextArea;
+import javafx.scene.control.Tooltip;
 import javafx.scene.layout.FlowPane;
 import javafx.scene.layout.GridPane;
 import javafx.stage.Stage;
@@ -91,10 +92,11 @@ public class UTFBoard extends Application {
         UnicodeBlock block = unicodeBlockFactory.getBlockByName(blockName);
         int min = block.getMinimum();
         int max = block.getMaximum();
-        rangeLabel.setText("Range: " + Integer.toString(min, 16).toUpperCase() + " - " + Integer.toString(max, 16).toUpperCase());
+        rangeLabel.setText("Range: U+" + Integer.toString(min, 16).toUpperCase() + " - U+" + Integer.toString(max, 16).toUpperCase());
         for (Integer codePoint : block.getCodePoints()) {
             String character = String.valueOf(Character.toChars(codePoint));
             Button button = new Button(character);
+            button.setTooltip(new Tooltip("UTF+" + Integer.toString(codePoint, 16).toUpperCase()));
             button.setOnAction(new EventHandler<ActionEvent>() {
                 @Override
                 public void handle(ActionEvent e) {
