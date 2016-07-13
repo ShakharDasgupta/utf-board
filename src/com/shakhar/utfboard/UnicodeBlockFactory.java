@@ -22,11 +22,12 @@ import java.util.Collections;
 import java.util.HashMap;
 import java.util.logging.Level;
 import java.util.logging.Logger;
+import javax.xml.parsers.DocumentBuilderFactory;
 import javax.xml.parsers.ParserConfigurationException;
-import javax.xml.parsers.SAXParserFactory;
-import org.xml.sax.InputSource;
+import org.w3c.dom.Document;
+import org.w3c.dom.Element;
+import org.w3c.dom.NodeList;
 import org.xml.sax.SAXException;
-import org.xml.sax.XMLReader;
 
 /**
  *
@@ -37,19 +38,38 @@ public class UnicodeBlockFactory {
     private HashMap<String, UnicodeBlock> blocksMap;
     
     private UnicodeBlockFactory() {
+        blocksMap = new HashMap();
         try {
-            XMLReader reader = SAXParserFactory.newInstance().newSAXParser().getXMLReader();
-            UnicodeHandler handler = new UnicodeHandler();
-            reader.setContentHandler(handler);
-            reader.parse(new InputSource(getClass().getResourceAsStream("/res/unicode.xml")));
-            blocksMap = handler.getMap();
+            initBlocksMap();
         } catch (ParserConfigurationException | SAXException | IOException ex) {
-            Logger.getLogger(UTFBoard.class.getName()).log(Level.SEVERE, null, ex);
+            Logger.getLogger(UnicodeBlockFactory.class.getName()).log(Level.SEVERE, null, ex);
         }
     }
     
     public static UnicodeBlockFactory newInstance() {
         return new UnicodeBlockFactory();
+    }
+    
+    private void initBlocksMap() throws ParserConfigurationException, SAXException, IOException {
+        Document doc = DocumentBuilderFactory.newInstance().newDocumentBuilder().parse(getClass().getResourceAsStream("/res/unicode.xml"));
+        Element root = doc.getDocumentElement();
+        NodeList blocks = root.getElementsByTagName("block");
+        for(int i = 0; i < blocks.getLength(); i++) {
+            Element block = (Element)blocks.item(i);
+            String name = block.getElementsByTagName("name").item(0).getFirstChild().getNodeValue();
+            int min = Integer.parseInt(block.getElementsByTagName("min").item(0).getFirstChild().getNodeValue(), 16);
+            int max = Integer.parseInt(block.getElementsByTagName("max").item(0).getFirstChild().getNodeValue(), 16);
+            System.out.println(name + ", " + min + ", " + max);
+            UnicodeBlock unicodeBlock = new UnicodeBlock(name, min, max);
+            Element codePoints = (Element)block.getElementsByTagName("codepoints").item(0);
+            NodeList cps = codePoints.getElementsByTagName("cp");
+            for(int j = 0; j < cps.getLength(); j++) {
+                int cp = Integer.parseInt(cps.item(j).getFirstChild().getNodeValue(), 16);
+                unicodeBlock.addCodePoint(cp);
+            }
+            blocksMap.put(name, unicodeBlock);
+        }
+        
     }
     
     public ArrayList<String> getBlockNames() {
